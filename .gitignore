@@ -1,0 +1,18 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+tmp/
+gin-bin
+
+# Node
+/node_modules
+/dist
+
+# Docker
+/.data-postgres
+/.idea
+
+.env
