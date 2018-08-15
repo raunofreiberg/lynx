@@ -1,7 +1,7 @@
 const { GraphQLString } = require('graphql');
 const { compare } = require('bcrypt');
-const { queryUser, insertUser } = require('../modules/user/handlers');
-const UserType = require('../modules/user/userType');
+const { getUser, insertUser } = require('../modules/user/handlers');
+const { UserType } = require('../graphql/types');
 
 const Mutations = {
     register: {
@@ -11,13 +11,19 @@ const Mutations = {
             password: { type: GraphQLString },
         },
         resolve: async (parent, { username, password }, { req }) => {
-            const user = await insertUser(username, password);
+            const doesUserExist = !!await getUser(username);
 
-            if (user) {
-                req.session.userId = user[0].id;
+            if (doesUserExist) {
+                return Promise.reject(new Error('User exists'));
             }
 
-            return user[0];
+            const [user] = await insertUser(username, password);
+
+            if (user) {
+                req.session.user = user;
+            }
+
+            return user;
         },
     },
     login: {
@@ -27,7 +33,7 @@ const Mutations = {
             password: { type: GraphQLString },
         },
         resolve: async (parent, { username, password }, { req }) => {
-            const user = await queryUser(username);
+            const user = await getUser(username);
 
             if (!user) {
                 return new Error('User not found');
@@ -39,13 +45,20 @@ const Mutations = {
                 return new Error('Wrong password');
             }
 
-            req.session.userId = user.id;
-            return user;
+            // Get rid of the password to prepare for the response.
+            const { password: _, ...rest } = user;
+
+            req.session.user = {
+                ...rest,
+            };
+            return rest;
         },
     },
     logout: {
         type: UserType,
-        resolve: async (parent, _, { req }) => req.session.destroy(),
+        resolve: async (parent, _, { req }) => {
+            req.session.destroy();
+        },
     },
 };
 

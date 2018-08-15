@@ -1,0 +1,48 @@
+version: "2"
+services:
+  api:
+    build: .
+    volumes:
+      - .:/usr/app
+      - /usr/app/node_modules
+    links:
+      - db
+      - redis
+    depends_on:
+      - db
+      - redis
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/lynx
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; npm run migrate && npm run server'
+  client:
+    build: .
+    ports:
+      - 8080:8080 # webpack-dev-server runs on 8080 by default
+    volumes:
+      - .:/usr/app
+      - /usr/app/node_modules
+    links:
+      - api
+    depends_on:
+      - api
+    environment:
+      - NODE_ENV=development
+    command: npm run client
+  db:
+    image: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - .data/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=lynx
+    restart: always
+  redis:
+    image: redis:alpine
+    volumes:
+      - .data/redis:/data

@@ -3,10 +3,11 @@ const redis = require('redis');
 const graphqlHTTP = require('express-graphql');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
+const { formatError } = require('apollo-errors');
 const schema = require('./schema');
 
 const app = express();
-const client = redis.createClient();
+const client = redis.createClient('redis://redis:6379');
 const port = process.env.PORT || 3000;
 
 app.use(session({
@@ -32,6 +33,7 @@ app.use(
         schema,
         graphiql: true,
         context: { req },
+        formatError,
     })),
 );
 

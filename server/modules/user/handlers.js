@@ -1,27 +1,28 @@
 const { hash } = require('bcrypt');
 const db = require('../../db');
 
-const queryUser = username => db('users').where({ username }).first();
-const queryUsers = () => db('users');
+const WHITELISTED_ATTRIBUTES = [
+    'id',
+    'username',
+    'created_at',
+];
+
+const getUser = username => db('users').where({ username }).first();
+const getUsers = () => db('users');
 
 const insertUser = async (username, password) => {
     const hashedPassword = await hash(password, 12);
-    const user = await queryUser(username);
-
-    if (user) {
-        return Promise.reject(new Error("User exists"));
-    }
 
     return db('users')
         .insert({
             username,
             password: hashedPassword,
         })
-        .returning(['id', 'username', 'created_at']);
+        .returning(WHITELISTED_ATTRIBUTES);
 };
 
 module.exports = {
-    queryUser,
-    queryUsers,
+    getUser,
+    getUsers,
     insertUser,
 };

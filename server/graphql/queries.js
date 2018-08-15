@@ -4,13 +4,14 @@ const {
     GraphQLObjectType,
     GraphQLID,
 } = require('graphql');
-const { queryUsers } = require('../modules/user/handlers');
-const UserType = require('../modules/user/userType');
+const { getUsers } = require('../modules/user/handlers');
+const { UserType } = require('../graphql/types');
+const { isAuthorized } = require('../middleware');
 
 const animals = {
     0: {
         id: 0,
-        name: "Fluffykins",
+        name: "Fluffykins.",
         abilities: [],
     },
     1: {
@@ -34,16 +35,42 @@ const Queries = {
     animal: {
         type: AnimalType,
         args: { id: { type: GraphQLID } },
-        resolve: (parent, { id }, { req }) => {
-            if (!req.session.userId) {
-                return new Error('oh fuck');
-            }
-            return animals[id];
-        },
+        resolve: (parent, { id }, { req }) => (
+            isAuthorized(
+                req,
+                () => animals[id],
+            )
+        ),
+    },
+    animals: {
+        type: AnimalType,
+        resolve: (parent, _, { req }) => (
+            isAuthorized(
+                req,
+                () => animals,
+            )
+        ),
     },
     users: {
         type: GraphQLList(UserType),
-        resolve: queryUsers,
+        resolve: getUsers,
+    },
+    me: {
+        type: UserType,
+        resolve: (parent, _, { req }) => {
+            if (req.session.user && req.session.user.id) {
+                return {
+                    id: req.session.user.id,
+                    username: req.session.user.username,
+                    isAuthenticated: true,
+                };
+            }
+            return {
+                id: null,
+                username: null,
+                isAuthenticated: false,
+            };
+        },
     },
 };
 

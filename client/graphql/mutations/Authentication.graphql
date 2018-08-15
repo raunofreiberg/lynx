@@ -1,0 +1,19 @@
+mutation registerMutation($username: String!, $password: String!) {
+    register(username: $username, password: $password) {
+        id
+        username
+    }
+}
+
+mutation loginMutation($username: String!, $password: String!) {
+    login(username: $username, password: $password) {
+        id
+        username
+    }
+}
+
+mutation logoutMutation {
+    logout {
+        id
+    }
+}
